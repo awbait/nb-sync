@@ -15,7 +15,7 @@ import (
 	"github.com/vmware/govmomi/vim25/types"
 )
 
-func main() {
+func mainss() {
 	vURL := flag.String("url", "", "The URL of a vCenter server")
 	flag.Parse()
 

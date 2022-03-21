@@ -1,0 +1,6 @@
+providers:
+  vsphere:
+    enable: false
+    host: 
+    username: 
+    password: 
