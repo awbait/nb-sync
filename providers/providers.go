@@ -1,11 +1,10 @@
 package providers
 
 import (
-	"fmt"
-	"nb-sync/providers/vmware"
+	"nb-sync/netbox"
+	"nb-sync/providers/vsphere"
 )
 
 func ProviderInit() {
-	fmt.Println("Hello")
-	vmware.VSphereConnect()
+	netbox.SyncData(vsphere.VMwareSync())
 }

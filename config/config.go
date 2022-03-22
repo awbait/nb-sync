@@ -15,6 +15,11 @@ type Config struct {
 			Password string `yaml:"password"`
 		} `yaml:"vsphere"`
 	} `yaml:"providers"`
+	Netbox struct {
+		Host  string `yaml:"host"`
+		Port  int    `yaml:"port"`
+		Token string `yaml:"token"`
+	} `yaml:"netbox"`
 }
 
 func GetConfig() (*Config, error) {
