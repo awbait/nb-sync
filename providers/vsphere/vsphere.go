@@ -12,11 +12,7 @@ import (
 
 func vmwareConnect(ctx context.Context) (*govmomi.Client, error) {
 	// LOAD CONFIG
-	cfg, err := config.GetConfig()
-	if err != nil {
-		fmt.Printf("CONFIG NOT LOADED: %s", err)
-		return nil, err
-	}
+	cfg := config.GetConfig()
 
 	// PARSE URL
 	vURL := "https://" + cfg.Providers.VSphere.Username + ":" + cfg.Providers.VSphere.Password + "@" + cfg.Providers.VSphere.Host + "/sdk"

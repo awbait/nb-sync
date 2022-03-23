@@ -1,6 +1,17 @@
 providers:
   vsphere:
     enable: false
-    host: 
-    username: 
-    password: 
+    host:
+    username:
+    password:
+netbox:
+  host:
+  port:
+  token:
+settings:
+  datacenters:
+    exclude:
+      - name
+    include:
+      - name1
+      - name3

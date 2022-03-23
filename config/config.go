@@ -30,20 +30,20 @@ type Config struct {
 	} `yaml:"settings"`
 }
 
-func GetConfig() (*Config, error) {
+func GetConfig() *Config {
 	config := &Config{}
 
 	file, err := os.Open("config.yaml")
 	if err != nil {
-		return nil, err
+		return nil
 	}
 	defer file.Close()
 
 	d := yaml.NewDecoder(file)
 
 	if err := d.Decode(&config); err != nil {
-		return nil, err
+		return nil
 	}
 
-	return config, nil
+	return config
 }
