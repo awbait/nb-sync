@@ -40,7 +40,7 @@ func netboxConnect() *client.NetBoxAPI {
 // Основная функция синхронизации данных из VSPHERE
 func SyncData(dcs []string) {
 	// SYNC TAG
-	syncTagExist := SyncTagFind()
+	syncTagExist := SyncTagCheck()
 	if !syncTagExist {
 		SyncTagCreate()
 	}
@@ -48,6 +48,7 @@ func SyncData(dcs []string) {
 	ClusterGroupSync(dcs)
 }
 
+// ClusterGroupSync
 // Функция синхронизации ClusterGroup(DataCenters)
 // Принимает в себя массив dcs: новых CG из VSphere и eDcs: массив существующих CG
 // TODO: Скорее всего эту функцию нужно будет вынести в другой пакет: providers
@@ -79,8 +80,11 @@ func ClusterGroupSync(dcs []string) {
 		}
 	}
 	fmt.Println("SYNCED")
+	// FIXME: ClusterCreate("TEST", 4)
+	fmt.Println(ClusterTypeCheck("VMware ESXi"))
 }
 
+// ClusterGroupCreate
 // Создать новый ClusterGroup в Netbox
 func ClusterGroupCreate(name string, slug string) *virtualization.VirtualizationClusterGroupsCreateCreated {
 	params := &virtualization.VirtualizationClusterGroupsCreateParams{
@@ -99,6 +103,7 @@ func ClusterGroupCreate(name string, slug string) *virtualization.Virtualization
 	return clusterGroup
 }
 
+// ClusterGroupDelete
 // Удалить существующий ClusterGroup в Netbox
 func ClusterGroupDelete(cgID int64) *virtualization.VirtualizationClusterGroupsDeleteNoContent {
 	params := &virtualization.VirtualizationClusterGroupsDeleteParams{
@@ -114,6 +119,7 @@ func ClusterGroupDelete(cgID int64) *virtualization.VirtualizationClusterGroupsD
 	return clusterGroup
 }
 
+// ClusterGroupList
 // Получить существующие ClusterGroup в Netbox
 func ClusterGroupList() []*models.ClusterGroup {
 	cgs, err := connect.Virtualization.VirtualizationClusterGroupsList(nil, nil)
@@ -125,6 +131,82 @@ func ClusterGroupList() []*models.ClusterGroup {
 	return cgs.Payload.Results
 }
 
+// Создать новый ClusterType
+// Для каждого источника будет разный
+func ClusterTypeCreate(name string, slug string) *virtualization.VirtualizationClusterTypesCreateCreated {
+	params := &virtualization.VirtualizationClusterTypesCreateParams{
+		Data: &models.ClusterType{
+			Name: &name,
+			Slug: &slug,
+		},
+		Context: context.Background(),
+	}
+	clusterType, err := connect.Virtualization.VirtualizationClusterTypesCreate(params, nil)
+	if err != nil {
+		log.Fatalf("CREATE ClusterGroupList REQUEST ERROR: %s", err)
+		return nil
+	}
+
+	return clusterType
+}
+
+func ClusterTypeCheck(name string) bool {
+	params := &virtualization.VirtualizationClusterTypesListParams{
+		Name:    &name,
+		Context: context.Background(),
+	}
+
+	clusterType, err := connect.Virtualization.VirtualizationClusterTypesList(params, nil)
+	if err != nil {
+		log.Fatalf("CREATE ClusterGroupList REQUEST ERROR: %s", err)
+		return false
+	}
+	if *clusterType.Payload.Count == 0 {
+		return false
+	}
+	return true
+}
+
+// Создать новый Cluster в Netbox
+func ClusterCreate(name string, clusterTypeID int64, clusterGroupID int64) *virtualization.VirtualizationClustersCreateCreated {
+	params := &virtualization.VirtualizationClustersCreateParams{
+		Data: &models.WritableCluster{
+			Name: &name,
+			Type: &clusterTypeID,
+			Group: &clusterGroupID,
+			Tags: []*models.NestedTag{{Name: &syncTagName, Slug: &syncTagSlug}},
+		},
+		Context: context.Background(),
+	}
+	cluster, err := connect.Virtualization.VirtualizationClustersCreate(params, nil)
+	if err != nil {
+		log.Fatalf("CREATE ClusterGroupList REQUEST ERROR: %s", err.Error())
+		return nil
+	}
+
+	return cluster
+}
+
+func VmCreate(name string, clusterID int64) *virtualization.VirtualizationVirtualMachinesCreateCreated {
+	params := &virtualization.VirtualizationVirtualMachinesCreateParams{
+		Data: &models.WritableVirtualMachineWithConfigContext{
+			Name: &name,
+			Cluster: &clusterID,
+			Tags: []*models.NestedTag{{Name: &syncTagName, Slug: &syncTagSlug}},
+		},
+		Context: context.Background(),
+	}
+
+	vm, err := connect.Virtualization.VirtualizationVirtualMachinesCreate(params, nil)
+	if err != nil {
+		log.Fatalf("CREATE ClusterGroupList REQUEST ERROR: %s", err.Error())
+		return nil
+	}
+
+	return vm
+}
+
+// SyncTagCreate
 // Создать тег системы синхронизации в Netbox
 func SyncTagCreate() {
 	name := syncTagName
@@ -146,8 +228,10 @@ func SyncTagCreate() {
 	syncTagID = syncTag.Payload.ID
 }
 
+// SyncTagFind
 // Проверка существования тега системы синхронизации в Netbox
-func SyncTagFind() bool {
+// FIXME: For не нужен. Нужно исправить запрос, по которому можно определять результат
+func SyncTagCheck() bool {
 	tags, err := connect.Extras.ExtrasTagsList(nil, nil)
 	if err != nil {
 		log.Fatalf("LIST SYNCTAGFIND REQUEST ERROR: %s", err)
